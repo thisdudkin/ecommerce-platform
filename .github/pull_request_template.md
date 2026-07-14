@@ -4,4 +4,4 @@
 
 ### Issues
 
-- Resolve issue #
+- Resolve #
