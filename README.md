@@ -1,4 +1,4 @@
-# Distributed version of the E-Commerce Platform built with Spring Boot
+# Distributed version of the eCommerce Platform
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/license/mit)
 
