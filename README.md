@@ -1,4 +1,4 @@
-# Distributed version of the eCommerce Platform
+# Distributed version of the eCommerce platform
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/license/mit)
 
