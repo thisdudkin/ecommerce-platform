@@ -1,0 +1,67 @@
+@startuml
+!NEW_C4_STYLE=1
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+Person_Ext(client, "Client", "Postman / curl / Frontend")
+
+System_Boundary(ecommerceSystem, "E-Commerce System") {
+    Container(apiProxy, "API Proxy", "Kubernetes Ingress", "Proxies API calls")
+    Container(apiGateway, "API Gateway", "Kubernetes Gateway", "Routes requests to different services")
+
+    Container(catalogService, "Catalog Service", "Spring MVC", "Manages product information")
+    Container(inventoryService, "Inventory Service", "Spring MVC", "Tracks stock levels")
+    Container(orderService, "Order Service", "Spring MVC", "Processes customer orders")
+    Container(fulfillmentService, "Fulfillment Service", "Spring MVC", "Manages order delivery")
+    Container(profileService, "Profile Service", "Spring MVC", "Manages user profiles")
+    Container(cartService, "Cart Service", "Spring MVC", "Manages shopping carts")
+    Container(pricingService, "Pricing Service", "Spring MVC", "Calculates dynamic prices")
+    Container(notificationService, "Notification Service", "Spring WebFlux", "Sends emails and push notifications")
+    Container(reviewService, "Review Service", "Spring MVC", "Manages product reviews")
+    Container(paymentService, "Payment Service", "Spring MVC", "Handles payment processing")
+
+    System_Boundary(kafkaCluster, "Kafka Cluster") {
+        ContainerQueue(kafka, "Message Broker", "Apache Kafka", "Event streaming platform")
+
+        Rel(catalogService, kafka, "Publishes product updates", "Kafka Topic")
+        Rel(paymentService, kafka, "Publishes payment events", "Kafka Topic")
+        Rel(inventoryService, kafka, "Publishes stock changes", "Kafka Topic")
+        Rel(orderService, kafka, "Publishes order events", "Kafka Topic")
+        Rel(fulfillmentService, kafka, "Consumes order events", "Kafka Topic")
+        Rel(profileService, kafka, "Publishes profile updates", "Kafka Topic")
+        Rel(cartService, kafka, "Publishes cart events", "Kafka Topic")
+        Rel(pricingService, kafka, "Consumes product/stock events", "Kafka Topic")
+        Rel(notificationService, kafka, "Consumes notification events", "Kafka Topic")
+        Rel(reviewService, kafka, "Publishes review events", "Kafka Topic")
+    }
+
+    Rel(client, apiProxy, "Makes requests", "HTTPS")
+    Rel(apiProxy, apiGateway, "Forwards requests", "HTTP")
+
+    Rel(apiGateway, catalogService, "Routing", "HTTP / REST")
+    Rel(apiGateway, paymentService, "Routing", "HTTP / REST")
+    Rel(apiGateway, inventoryService, "Routing", "HTTP / REST")
+    Rel(apiGateway, orderService, "Routing", "HTTP / REST")
+    Rel(apiGateway, fulfillmentService, "Routing", "HTTP / REST")
+    Rel(apiGateway, profileService, "Routing", "HTTP / REST")
+    Rel(apiGateway, cartService, "Routing", "HTTP / REST")
+    Rel(apiGateway, pricingService, "Routing", "HTTP / REST")
+    Rel(apiGateway, notificationService, "Routing", "HTTP / REST")
+    Rel(apiGateway, reviewService, "Routing", "HTTP / REST")
+}
+
+System_Boundary(identitySystem, "Identity Provider") {
+    Container(identityProvider, "Keycloak", "OIDC Provider", "User and token management")
+    ContainerDb(identityProviderDatabase, "Keycloak Database", "PostgreSQL", "Stores user credentials")
+    
+    Rel_Neighbor(client, identityProvider, "Performs authentication", "OAuth2 & OpenID Connect")
+    Rel_Neighbor(identityProvider, identityProviderDatabase, "Make SQL requests", "JDBC")
+}
+
+System_Boundary(paymentSystem, "Payment Provider") {
+  System_Ext(paymentGateway, "Payment Gateway", "External payment processing service")
+
+  Rel(paymentService, paymentGateway, "Processes transactions", "REST API")
+}
+@enduml

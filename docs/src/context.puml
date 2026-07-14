@@ -1,0 +1,44 @@
+@startuml
+!NEW_C4_STYLE=1
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+Person_Ext(client, "Client", "Postman / curl / Frontend")
+Person(admin, "Administrator", "System monitoring and configuration management")
+
+System_Boundary(ecommerceSystem, "E-Commerce System") {
+  System(coreSystem, "E-Commerce Platform", "Educational application")
+
+  Rel(client, coreSystem, "Makes requests", "HTTPS")
+  Rel(admin, coreSystem, "Makes requests", "HTTPS")
+}
+
+System_Boundary(paymentSystem, "Payment Provider") {
+  System_Ext(paymentGateway, "Payment Gateway", "External payment processing service")
+
+  Rel(coreSystem, paymentGateway, "Processes transactions", "REST API")
+}
+
+System_Boundary(identitySystem, "Identity Provider") {
+  System_Ext(identityProvider, "Keycloak", "User and token management")
+
+  Rel(coreSystem, identityProvider, "Performs authentication", "OAuth2 & OpenID Connect")
+}
+
+System_Boundary(observabilitySystem, "Observability") {
+  System_Ext(grafana, "Grafana", "Centralized visualization and dashboards")
+
+  System_Ext(prometheus, "Prometheus", "Metrics collection and storage")
+  System_Ext(tempo, "Tempo", "Distributed tracing storage")
+  System_Ext(loki, "Loki", "Log aggregation and storage")
+
+  Rel_Neighbor(coreSystem, prometheus, "Exports metrics", "HTTP")
+  Rel(coreSystem, tempo, "Sends traces", "OTLP")
+  Rel(coreSystem, loki, "Sends logs", "HTTP")
+
+  Rel_Neighbor(grafana, prometheus, "Queries metrics for visualization", "PromQL")
+  Rel(grafana, tempo, "Queries traces for visualization", "Tempo API")
+  Rel(grafana, loki, "Queries logs for visualization", "LogQL")
+
+  Rel(admin, grafana, "Views dashboards, logs, and traces", "HTTPS")
+}
+@enduml
