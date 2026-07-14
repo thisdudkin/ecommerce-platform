@@ -5,10 +5,10 @@
 LAYOUT_WITH_LEGEND()
 
 Person_Ext(client, "Client", "Postman / curl / Frontend")
+Person(admin, "Administrator", "System monitoring and configuration management")
 
 System_Boundary(ecommerceSystem, "E-Commerce System") {
-    Container(apiProxy, "API Proxy", "Kubernetes Ingress", "Proxies API calls")
-    Container(apiGateway, "API Gateway", "Kubernetes Gateway", "Routes requests to different services")
+    Container(apiProxy, "API Proxy", "Kubernetes Gateway API", "Terminates TLS, authenticates, limits and routes")
 
     Container(catalogService, "Catalog Service", "Spring MVC", "Manages product information")
     Container(inventoryService, "Inventory Service", "Spring MVC", "Tracks stock levels")
@@ -23,45 +23,61 @@ System_Boundary(ecommerceSystem, "E-Commerce System") {
 
     System_Boundary(kafkaCluster, "Kafka Cluster") {
         ContainerQueue(kafka, "Message Broker", "Apache Kafka", "Event streaming platform")
-
-        Rel(catalogService, kafka, "Publishes product updates", "Kafka Topic")
-        Rel(paymentService, kafka, "Publishes payment events", "Kafka Topic")
-        Rel(inventoryService, kafka, "Publishes stock changes", "Kafka Topic")
-        Rel(orderService, kafka, "Publishes order events", "Kafka Topic")
-        Rel(fulfillmentService, kafka, "Consumes order events", "Kafka Topic")
-        Rel(profileService, kafka, "Publishes profile updates", "Kafka Topic")
-        Rel(cartService, kafka, "Publishes cart events", "Kafka Topic")
-        Rel(pricingService, kafka, "Consumes product/stock events", "Kafka Topic")
-        Rel(notificationService, kafka, "Consumes notification events", "Kafka Topic")
-        Rel(reviewService, kafka, "Publishes review events", "Kafka Topic")
     }
 
-    Rel(client, apiProxy, "Makes requests", "HTTPS")
-    Rel(apiProxy, apiGateway, "Forwards requests", "HTTP")
+    Rel(client, apiProxy, "Make API requests", "HTTP")
+    Rel(admin, apiProxy, "Make API requests", "HTTP")
 
-    Rel(apiGateway, catalogService, "Routing", "HTTP / REST")
-    Rel(apiGateway, paymentService, "Routing", "HTTP / REST")
-    Rel(apiGateway, inventoryService, "Routing", "HTTP / REST")
-    Rel(apiGateway, orderService, "Routing", "HTTP / REST")
-    Rel(apiGateway, fulfillmentService, "Routing", "HTTP / REST")
-    Rel(apiGateway, profileService, "Routing", "HTTP / REST")
-    Rel(apiGateway, cartService, "Routing", "HTTP / REST")
-    Rel(apiGateway, pricingService, "Routing", "HTTP / REST")
-    Rel(apiGateway, notificationService, "Routing", "HTTP / REST")
-    Rel(apiGateway, reviewService, "Routing", "HTTP / REST")
+    Rel(apiProxy, catalogService, "Routes", "HTTP / REST")
+    Rel(apiProxy, paymentService, "Routes", "HTTP / REST")
+    Rel(apiProxy, inventoryService, "Routes", "HTTP / REST")
+    Rel(apiProxy, orderService, "Routes", "HTTP / REST")
+    Rel(apiProxy, fulfillmentService, "Routes", "HTTP / REST")
+    Rel(apiProxy, profileService, "Routes", "HTTP / REST")
+    Rel(apiProxy, cartService, "Routes", "HTTP / REST")
+    Rel(apiProxy, pricingService, "Routes", "HTTP / REST")
+    Rel(apiProxy, notificationService, "Routes", "HTTP / REST")
+    Rel(apiProxy, reviewService, "Routes", "HTTP / REST")
+
+    Rel(catalogService, kafka, "Publishes catalog events", "Kafka")
+    Rel(orderService, kafka, "Publishes order events", "Kafka")
+    Rel(inventoryService, kafka, "Consumes orders; publishes inventory events", "Kafka")
+    Rel(paymentService, kafka, "Consumes orders; publishes payment events", "Kafka")
+    Rel(fulfillmentService, kafka, "Consumes order and payment events", "Kafka")
+    Rel(pricingService, kafka, "Consumes catalog and inventory events", "Kafka")
+    Rel(notificationService, kafka, "Consumes notification events", "Kafka")
 }
 
 System_Boundary(identitySystem, "Identity Provider") {
     Container(identityProvider, "Keycloak", "OIDC Provider", "User and token management")
     ContainerDb(identityProviderDatabase, "Keycloak Database", "PostgreSQL", "Stores user credentials")
-    
-    Rel_Neighbor(client, identityProvider, "Performs authentication", "OAuth2 & OpenID Connect")
-    Rel_Neighbor(identityProvider, identityProviderDatabase, "Make SQL requests", "JDBC")
+
+    Rel(client, identityProvider, "Authenticates", "OAuth 2.0 / OpenID Connect")
+    Rel(apiProxy, identityProvider, "Loads signing keys", "OIDC / JWKS")
+    Rel(identityProvider, identityProviderDatabase, "Stores identity data", "JDBC")
 }
 
 System_Boundary(paymentSystem, "Payment Provider") {
-  System_Ext(paymentGateway, "Payment Gateway", "External payment processing service")
+    System_Ext(paymentGateway, "Payment Gateway", "External payment processing service")
 
-  Rel(paymentService, paymentGateway, "Processes transactions", "REST API")
+    Rel(paymentService, paymentGateway, "Processes transactions", "REST API")
 }
+
+System_Boundary(observabilitySystem, "Observability") {
+    Container(collector, "OpenTelemetry", "OpenTelemetry", "Receives OTLP telemetry and Kubernetes logs from all platform containers")
+    ContainerDb(prometheus, "Prometheus", "Metrics", "Stores and queries metrics")
+    ContainerDb(loki, "Loki", "Logs", "Stores and queries logs")
+    ContainerDb(tempo, "Tempo", "Traces", "Stores and queries distributed traces")
+    Container(grafana, "Grafana", "Visualization and alerting", "Correlates metrics, logs and traces")
+
+    Rel(prometheus, collector, "Scrapes metrics", "Prometheus")
+    Rel(collector, loki, "Exports logs", "OTLP")
+    Rel(collector, tempo, "Exports traces", "OTLP")
+    Rel(grafana, prometheus, "Queries metrics", "PromQL")
+    Rel(grafana, loki, "Queries logs", "LogQL")
+    Rel(grafana, tempo, "Queries traces", "TraceQL")
+
+    Rel(admin, grafana, "Views dashboards and alerts", "HTTPS")
+}
+
 @enduml

@@ -7,38 +7,25 @@ Person(admin, "Administrator", "System monitoring and configuration management")
 
 System_Boundary(ecommerceSystem, "E-Commerce System") {
   System(coreSystem, "E-Commerce Platform", "Educational application")
-
-  Rel(client, coreSystem, "Makes requests", "HTTPS")
-  Rel(admin, coreSystem, "Makes requests", "HTTPS")
 }
 
 System_Boundary(paymentSystem, "Payment Provider") {
   System_Ext(paymentGateway, "Payment Gateway", "External payment processing service")
-
-  Rel(coreSystem, paymentGateway, "Processes transactions", "REST API")
 }
 
 System_Boundary(identitySystem, "Identity Provider") {
   System_Ext(identityProvider, "Keycloak", "User and token management")
-
-  Rel(coreSystem, identityProvider, "Performs authentication", "OAuth2 & OpenID Connect")
 }
 
 System_Boundary(observabilitySystem, "Observability") {
-  System_Ext(grafana, "Grafana", "Centralized visualization and dashboards")
-
-  System_Ext(prometheus, "Prometheus", "Metrics collection and storage")
-  System_Ext(tempo, "Tempo", "Distributed tracing storage")
-  System_Ext(loki, "Loki", "Log aggregation and storage")
-
-  Rel_Neighbor(coreSystem, prometheus, "Exports metrics", "HTTP")
-  Rel(coreSystem, tempo, "Sends traces", "OTLP")
-  Rel(coreSystem, loki, "Sends logs", "HTTP")
-
-  Rel_Neighbor(grafana, prometheus, "Queries metrics for visualization", "PromQL")
-  Rel(grafana, tempo, "Queries traces for visualization", "Tempo API")
-  Rel(grafana, loki, "Queries logs for visualization", "LogQL")
-
-  Rel(admin, grafana, "Views dashboards, logs, and traces", "HTTPS")
+  System_Ext(observabilityPlatform, "Observability Platform", "OpenTelemetry, Prometheus, Loki, Tempo and Grafana")
 }
+
+Rel(client, coreSystem, "Uses", "HTTPS")
+Rel(admin, coreSystem, "Administers", "HTTPS")
+Rel(coreSystem, paymentGateway, "Processes transactions", "REST API")
+Rel(client, identityProvider, "Authenticates", "OAuth 2.0 / OpenID Connect")
+Rel(coreSystem, identityProvider, "Validates identities", "OAuth 2.0 / OpenID Connect")
+Rel(coreSystem, observabilityPlatform, "Emits metrics, logs and traces", "OTLP")
+Rel(admin, observabilityPlatform, "Monitors the platform", "HTTPS")
 @enduml

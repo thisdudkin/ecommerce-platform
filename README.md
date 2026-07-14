@@ -17,6 +17,4 @@ container diagram. This was done deliberately to avoid cluttering the diagram wi
 
 ![Context Diagram](docs/images/context.png)
 
-### Container Diagram
-
-![Container Diagram](docs/images/container.png)
+You can find the rest of the documentation [here](https://github.com/thisdudkin/ecommerce-platform/tree/main/docs).
