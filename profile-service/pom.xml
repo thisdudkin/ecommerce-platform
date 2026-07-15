@@ -4,15 +4,15 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.ecommerce</groupId>
-    <artifactId>profile-service</artifactId>
-    <version>1.0.0</version>
-
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>4.1.0</version>
     </parent>
+
+    <groupId>com.ecommerce</groupId>
+    <artifactId>profile-service</artifactId>
+    <version>1.0.0</version>
 
     <properties>
         <!-- Maven Compiler Settings -->
@@ -20,20 +20,26 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- Maven Plugins Settings -->
-        <maven.compiler.plugin.version>3.15.0</maven.compiler.plugin.version>
+        <jacoco.maven.plugin.version>0.8.15</jacoco.maven.plugin.version>
         <maven.enforcer.plugin.version>3.6.3</maven.enforcer.plugin.version>
-        <maven.surefire.plugin.version>3.5.5</maven.surefire.plugin.version>
-        <maven.failsafe.plugin.version>3.5.5</maven.failsafe.plugin.version>
-        <jacoco.maven.plugin.version>0.8.14</jacoco.maven.plugin.version>
-        <openapi.generator.maven.plugin.version>7.22.0</openapi.generator.maven.plugin.version>
+        <maven.surefire.plugin.version>3.5.6</maven.surefire.plugin.version>
+        <maven.failsafe.plugin.version>3.5.6</maven.failsafe.plugin.version>
+        <maven.compiler.plugin.version>3.15.0</maven.compiler.plugin.version>
+        <openapi.generator.maven.plugin.version>7.23.0</openapi.generator.maven.plugin.version>
+
+        <!-- OpenAPI Settings -->
+        <openapi.api.package>com.ecommerce.profiles.rest.api</openapi.api.package>
+        <openapi.model.package>com.ecommerce.profiles.rest.dto</openapi.model.package>
+        <openapi.specification.path>${project.basedir}/../api/profile-api.yml</openapi.specification.path>
+        <openapi.generated.directory>${project.build.directory}/generated-sources/openapi</openapi.generated.directory>
 
         <!-- Quality Gates -->
         <jacoco.minimum.branch.coverage>0.70</jacoco.minimum.branch.coverage>
 
         <!-- Other Settings -->
         <mapstruct.version>1.6.3</mapstruct.version>
-        <flyway.database.postgresql.version>12.10.0</flyway.database.postgresql.version>
         <lombok.mapstruct.binding.version>0.2.0</lombok.mapstruct.binding.version>
+        <flyway.database.postgresql.version>12.10.0</flyway.database.postgresql.version>
     </properties>
 
     <dependencies>
@@ -116,35 +122,18 @@
 
     <build>
         <plugins>
-            <!-- Maven Plugin: Enforcer -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-enforcer-plugin</artifactId>
-                <version>${maven.enforcer.plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>enforce-build-environment</id>
-                        <goals>
-                            <goal>enforce</goal>
-                        </goals>
-                        <configuration>
-                            <rules>
-                                <requireMavenVersion>
-                                    <version>[3.9.0,)</version>
-                                </requireMavenVersion>
-                                <requireJavaVersion>
-                                    <version>[25,26)</version>
-                                </requireJavaVersion>
-                            </rules>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
             <!-- Maven Plugin: Spring Boot -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
             </plugin>
 
             <!-- Maven Plugin: Compiler -->
@@ -179,6 +168,16 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven.surefire.plugin.version}</version>
+                <configuration>
+                    <includes>
+                        <include>**/*Test.java</include>
+                        <include>**/*Tests.java</include>
+                    </includes>
+                    <excludes>
+                        <exclude>**/*IT.java</exclude>
+                        <exclude>**/*ITCase.java</exclude>
+                    </excludes>
+                </configuration>
             </plugin>
 
             <!-- Maven Plugin: Integration Tests -->
@@ -186,6 +185,21 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <version>${maven.failsafe.plugin.version}</version>
+                <configuration>
+                    <includes>
+                        <include>**/*IT.java</include>
+                        <include>**/*ITCase.java</include>
+                    </includes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>integration-tests</id>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- Maven Plugin: Code Coverage -->
@@ -236,32 +250,68 @@
                 <version>${openapi.generator.maven.plugin.version}</version>
                 <executions>
                     <execution>
-                        <id>generate-profile-api</id>
+                        <id>generate-openapi-contract</id>
+                        <phase>generate-sources</phase>
                         <goals>
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <inputSpec>${project.basedir}/../api/profile-api.yml</inputSpec>
+                            <inputSpec>${openapi.specification.path}</inputSpec>
                             <generatorName>spring</generatorName>
-                            <output>${project.build.directory}/generated-sources/openapi</output>
-                            <apiPackage>com.ecommerce.profiles.rest.api</apiPackage>
-                            <modelPackage>com.ecommerce.profiles.rest.dto</modelPackage>
+                            <library>spring-boot</library>
+
+                            <output>${openapi.generated.directory}</output>
+                            <apiPackage>${openapi.api.package}</apiPackage>
+                            <modelPackage>${openapi.model.package}</modelPackage>
+
+                            <!-- Build integration -->
+                            <cleanupOutput>true</cleanupOutput>
+                            <skipValidateSpec>false</skipValidateSpec>
+                            <addCompileSourceRoot>true</addCompileSourceRoot>
+
+                            <!-- Generate only API contracts and DTO -->
+                            <generateApis>true</generateApis>
+                            <generateModels>true</generateModels>
+                            <generateSupportingFiles>false</generateSupportingFiles>
+
+                            <!-- Do not generate tests and documentation -->
                             <generateApiTests>false</generateApiTests>
                             <generateModelTests>false</generateModelTests>
                             <generateApiDocumentation>false</generateApiDocumentation>
                             <generateModelDocumentation>false</generateModelDocumentation>
-                            <generateSupportingFiles>false</generateSupportingFiles>
+
                             <configOptions>
+                                <sourceFolder>src/main/java</sourceFolder>
+
+                                <!-- Pure API contracts -->
                                 <interfaceOnly>true</interfaceOnly>
                                 <skipDefaultInterface>true</skipDefaultInterface>
                                 <useTags>true</useTags>
+                                <requestMappingMode>api_interface</requestMappingMode>
+
+                                <!-- Spring Boot 4 / Spring Framework 7 -->
                                 <useSpringBoot4>true</useSpringBoot4>
                                 <useJackson3>true</useJackson3>
+                                <useJspecify>true</useJspecify>
+
+                                <!-- API response types -->
+                                <useResponseEntity>true</useResponseEntity>
+                                <generateGenericResponseEntity>false</generateGenericResponseEntity>
+
+                                <!-- Validation -->
                                 <useBeanValidation>true</useBeanValidation>
-                                <performBeanValidation>true</performBeanValidation>
+                                <useSpringBuiltInValidation>true</useSpringBuiltInValidation>
+
+                                <!-- DTO generation -->
+                                <dateLibrary>java8</dateLibrary>
                                 <openApiNullable>false</openApiNullable>
+
+                                <!-- OpenAPI YAML remains the documentation source -->
                                 <annotationLibrary>none</annotationLibrary>
                                 <documentationProvider>none</documentationProvider>
+                                <useSwaggerUI>false</useSwaggerUI>
+
+                                <!-- Reproducible generated sources -->
                                 <hideGenerationTimestamp>true</hideGenerationTimestamp>
                             </configOptions>
                         </configuration>
