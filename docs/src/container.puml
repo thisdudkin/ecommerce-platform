@@ -1,83 +1,110 @@
 @startuml
 !NEW_C4_STYLE=1
-!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+!include <C4/C4_Container>
 
-LAYOUT_WITH_LEGEND()
+title eCommerce - System Container
 
-Person_Ext(client, "Client", "Postman / curl / Frontend")
-Person(admin, "Administrator", "System monitoring and configuration management")
+LAYOUT_TOP_DOWN()
 
-System_Boundary(ecommerceSystem, "E-Commerce System") {
-    Container(apiProxy, "API Proxy", "Kubernetes Gateway API", "Terminates TLS, authenticates, limits and routes")
+Person(customer, "Customer", "Uses the commerce capabilities")
+Person(platformOperator, "Platform Operator", "Operates workflows and monitors platform health")
 
-    Container(catalogService, "Catalog Service", "Spring MVC", "Manages product information")
-    Container(inventoryService, "Inventory Service", "Spring MVC", "Tracks stock levels")
-    Container(orderService, "Order Service", "Spring MVC", "Processes customer orders")
-    Container(fulfillmentService, "Fulfillment Service", "Spring MVC", "Manages order delivery")
-    Container(profileService, "Profile Service", "Spring MVC", "Manages user profiles")
-    Container(cartService, "Cart Service", "Spring MVC", "Manages shopping carts")
-    Container(pricingService, "Pricing Service", "Spring MVC", "Calculates dynamic prices")
-    Container(notificationService, "Notification Service", "Spring WebFlux", "Sends emails and push notifications")
-    Container(reviewService, "Review Service", "Spring MVC", "Manages product reviews")
-    Container(paymentService, "Payment Service", "Spring MVC", "Handles payment processing")
+System_Ext(identityProvider, "Identity Provider", "Keycloak authenticates users and issues access tokens")
+System_Ext(paymentProvider, "Payment Provider", "Authorizes, captures and refunds payments")
+System_Ext(notificationProvider, "Notification Provider", "Delivers email, SMS and push notifications")
+System_Ext(observabilityPlatform, "Observability Platform", "Prometheus, Loki, Tempo and Grafana store, correlate and visualize telemetry")
 
-    System_Boundary(kafkaCluster, "Kafka Cluster") {
-        ContainerQueue(kafka, "Message Broker", "Apache Kafka", "Event streaming platform")
+System_Boundary(ecommercePlatform, "E-Commerce Platform") {
+    Container(apiGateway, "API Gateway", "Kubernetes Gateway API", "Terminates TLS, enforces edge policies and routes authenticated requests")
+
+    Container_Boundary(customerProductCapabilities, "Customer and Product Capabilities") {
+        Container(catalogService, "Catalog Service", "Java 25 / Spring Boot 4", "Owns products, categories and product media metadata")
+        Container(pricingService, "Pricing Service", "Java 25 / Spring Boot 4", "Calculates prices, discounts and promotions")
+        Container(cartService, "Cart Service", "Java 25 / Spring Boot 4", "Maintains short-lived customer shopping carts")
+        Container(profileService, "Profile Service", "Java 25 / Spring Boot 4", "Manages customer profiles and delivery addresses")
+        Container(reviewService, "Review Service", "Java 25 / Spring Boot 4", "Manages product ratings and reviews")
     }
 
-    Rel(client, apiProxy, "Make API requests", "HTTP")
-    Rel(admin, apiProxy, "Make API requests", "HTTP")
+    Container_Boundary(orderLifecycleCapabilities, "Order Lifecycle Capabilities") {
+        Container(orderService, "Order Service", "Java 25 / Spring Boot 4 / Temporal SDK", "Owns order state and durable order workflow definitions")
+        Container(inventoryService, "Inventory Service", "Java 25 / Spring Boot 4 / Temporal SDK", "Reserves, commits and releases stock")
+        Container(paymentService, "Payment Service", "Java 25 / Spring Boot 4 / Temporal SDK", "Coordinates payment authorization, capture and refunds")
+        Container(fulfillmentService, "Fulfillment Service", "Java 25 / Spring Boot 4 / Temporal SDK", "Plans shipments and tracks delivery progress")
+    }
 
-    Rel(apiProxy, catalogService, "Routes", "HTTP / REST")
-    Rel(apiProxy, paymentService, "Routes", "HTTP / REST")
-    Rel(apiProxy, inventoryService, "Routes", "HTTP / REST")
-    Rel(apiProxy, orderService, "Routes", "HTTP / REST")
-    Rel(apiProxy, fulfillmentService, "Routes", "HTTP / REST")
-    Rel(apiProxy, profileService, "Routes", "HTTP / REST")
-    Rel(apiProxy, cartService, "Routes", "HTTP / REST")
-    Rel(apiProxy, pricingService, "Routes", "HTTP / REST")
-    Rel(apiProxy, notificationService, "Routes", "HTTP / REST")
-    Rel(apiProxy, reviewService, "Routes", "HTTP / REST")
+    Container_Boundary(platformCapabilities, "Platform Capabilities") {
+        ContainerQueue(kafkaCluster, "Event Streaming Platform", "Apache Kafka cluster", "Distributes versioned product, order, inventory, payment and fulfillment events")
+        Container(temporalCluster, "Workflow Orchestration", "Temporal cluster", "Persists durable execution state and dispatches workflow and activity tasks")
+        Container(notificationService, "Notification Service", "Java 25 / Spring Boot 4", "Consumes business events and sends customer notifications")
+        Container(telemetryCollector, "Telemetry Collector", "OpenTelemetry Collector", "Receives and enriches telemetry from every platform container")
 
-    Rel(catalogService, kafka, "Publishes catalog events", "Kafka")
-    Rel(orderService, kafka, "Publishes order events", "Kafka")
-    Rel(inventoryService, kafka, "Consumes orders; publishes inventory events", "Kafka")
-    Rel(paymentService, kafka, "Consumes orders; publishes payment events", "Kafka")
-    Rel(fulfillmentService, kafka, "Consumes order and payment events", "Kafka")
-    Rel(pricingService, kafka, "Consumes catalog and inventory events", "Kafka")
-    Rel(notificationService, kafka, "Consumes notification events", "Kafka")
+        ContainerDb(serviceDatabases, "Service-Owned Databases", "PostgreSQL cluster", "Runs an isolated database per stateful service; cross-service database access is forbidden")
+        ContainerDb(cartStore, "Cart Store", "Redis cluster", "Stores active carts with expiration")
+        ContainerDb(temporalDatabase, "Temporal Persistence", "PostgreSQL", "Stores workflow state, execution history and visibility data")
+        Container(temporalUi, "Workflow Operations UI", "Temporal Web UI", "Inspects workflow executions, retries and failures")
+    }
 }
 
-System_Boundary(identitySystem, "Identity Provider") {
-    Container(identityProvider, "Keycloak", "OIDC Provider", "User and token management")
-    ContainerDb(identityProviderDatabase, "Keycloak Database", "PostgreSQL", "Stores user credentials")
+Rel(customer, apiGateway, "Uses commerce APIs", "HTTPS / JSON")
+Rel(customer, identityProvider, "Authenticates", "OAuth 2.0 / OpenID Connect")
+Rel(apiGateway, identityProvider, "Validates tokens and loads signing keys", "OIDC / JWKS")
 
-    Rel(client, identityProvider, "Authenticates", "OAuth 2.0 / OpenID Connect")
-    Rel(apiProxy, identityProvider, "Loads signing keys", "OIDC / JWKS")
-    Rel(identityProvider, identityProviderDatabase, "Stores identity data", "JDBC")
-}
+Rel(apiGateway, catalogService, "Routes catalog requests", "HTTP / REST")
+Rel(apiGateway, cartService, "Routes cart requests", "HTTP / REST")
+Rel(apiGateway, profileService, "Routes profile requests", "HTTP / REST")
+Rel(apiGateway, reviewService, "Routes review requests", "HTTP / REST")
+Rel(apiGateway, orderService, "Routes order requests", "HTTP / REST")
 
-System_Boundary(paymentSystem, "Payment Provider") {
-    System_Ext(paymentGateway, "Payment Gateway", "External payment processing service")
+Rel(catalogService, kafkaCluster, "Publishes product events", "Kafka")
+Rel(orderService, kafkaCluster, "Publishes order lifecycle events", "Kafka")
+Rel(kafkaCluster, pricingService, "Delivers product change events", "Kafka")
+Rel(kafkaCluster, notificationService, "Delivers customer notification events", "Kafka")
 
-    Rel(paymentService, paymentGateway, "Processes transactions", "REST API")
-}
+Rel(orderService, temporalCluster, "Runs durable order workflows", "Temporal SDK / gRPC")
+Rel(inventoryService, temporalCluster, "Executes inventory activities", "Temporal task queue")
+Rel(paymentService, temporalCluster, "Executes payment activities", "Temporal task queue")
+Rel(fulfillmentService, temporalCluster, "Executes fulfillment activities", "Temporal task queue")
+Rel_D(temporalCluster, temporalDatabase, "Persists workflow state and history", "SQL")
+Rel(temporalUi, temporalCluster, "Queries and controls workflow executions", "Temporal API")
+Rel(platformOperator, temporalUi, "Investigates and controls workflows", "HTTPS")
 
-System_Boundary(observabilitySystem, "Observability") {
-    Container(collector, "OpenTelemetry", "OpenTelemetry", "Receives OTLP telemetry and Kubernetes logs from all platform containers")
-    ContainerDb(prometheus, "Prometheus", "Metrics", "Stores and queries metrics")
-    ContainerDb(loki, "Loki", "Logs", "Stores and queries logs")
-    ContainerDb(tempo, "Tempo", "Traces", "Stores and queries distributed traces")
-    Container(grafana, "Grafana", "Visualization and alerting", "Correlates metrics, logs and traces")
+Rel_D(profileService, serviceDatabases, "Uses isolated profile database", "JDBC")
+Rel_D(orderService, serviceDatabases, "Uses isolated order database", "JDBC")
+Rel_D(cartService, cartStore, "Stores active carts", "Redis protocol")
 
-    Rel(prometheus, collector, "Scrapes metrics", "Prometheus")
-    Rel(collector, loki, "Exports logs", "OTLP")
-    Rel(collector, tempo, "Exports traces", "OTLP")
-    Rel(grafana, prometheus, "Queries metrics", "PromQL")
-    Rel(grafana, loki, "Queries logs", "LogQL")
-    Rel(grafana, tempo, "Queries traces", "TraceQL")
+Rel(paymentService, paymentProvider, "Authorizes, captures and refunds payments", "HTTPS / REST")
+Rel(notificationService, notificationProvider, "Sends transactional messages", "HTTPS / provider APIs")
 
-    Rel(admin, grafana, "Views dashboards and alerts", "HTTPS")
-}
+Rel(telemetryCollector, observabilityPlatform, "Exports metrics, logs and traces", "OTLP / Prometheus remote write")
+Rel(platformOperator, observabilityPlatform, "Views dashboards and investigates incidents", "HTTPS")
 
+Lay_R(customer, platformOperator)
+Lay_D(customer, apiGateway)
+
+Lay_R(catalogService, pricingService)
+Lay_R(pricingService, cartService)
+Lay_R(cartService, profileService)
+Lay_R(profileService, reviewService)
+
+Lay_R(orderService, inventoryService)
+Lay_R(inventoryService, paymentService)
+Lay_R(paymentService, fulfillmentService)
+
+Lay_R(kafkaCluster, temporalCluster)
+Lay_R(temporalCluster, notificationService)
+Lay_R(notificationService, telemetryCollector)
+
+Lay_R(serviceDatabases, cartStore)
+Lay_R(cartStore, temporalDatabase)
+Lay_R(temporalDatabase, temporalUi)
+
+Lay_D(catalogService, orderService)
+Lay_D(orderService, kafkaCluster)
+
+Lay_L(apiGateway, identityProvider)
+Lay_R(paymentService, paymentProvider)
+Lay_R(notificationService, notificationProvider)
+Lay_R(telemetryCollector, observabilityPlatform)
+
+SHOW_LEGEND()
 @enduml

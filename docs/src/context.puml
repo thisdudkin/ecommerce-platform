@@ -1,31 +1,37 @@
 @startuml
 !NEW_C4_STYLE=1
-!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+!include <C4/C4_Context>
 
-Person_Ext(client, "Client", "Postman / curl / Frontend")
-Person(admin, "Administrator", "System monitoring and configuration management")
+title eCommerce - System Context
 
-System_Boundary(ecommerceSystem, "E-Commerce System") {
-  System(coreSystem, "E-Commerce Platform", "Educational application")
-}
+LAYOUT_TOP_DOWN()
 
-System_Boundary(paymentSystem, "Payment Provider") {
-  System_Ext(paymentGateway, "Payment Gateway", "External payment processing service")
-}
+Person(customer, "Customer", "Browses products, manages a cart, places orders and tracks fulfillment")
+Person(platformOperator, "Platform Operator", "Operates the platform and investigates service incidents")
 
-System_Boundary(identitySystem, "Identity Provider") {
-  System_Ext(identityProvider, "Keycloak", "User and token management")
-}
+System(ecommercePlatform, "E-Commerce Platform", "Educational distributed commerce platform for product discovery, ordering, payment and fulfillment")
 
-System_Boundary(observabilitySystem, "Observability") {
-  System_Ext(observabilityPlatform, "Observability Platform", "OpenTelemetry, Prometheus, Loki, Tempo and Grafana")
-}
+System_Ext(identityProvider, "Identity Provider", "Keycloak authenticates users and issues OAuth 2.0 / OpenID Connect tokens")
+System_Ext(paymentProvider, "Payment Provider", "External provider authorizes, captures and refunds payments")
+System_Ext(notificationProvider, "Notification Provider", "External email, SMS and push delivery services")
+System_Ext(observabilityPlatform, "Observability Platform", "Central platform for telemetry, dashboards and alerting")
 
-Rel(client, coreSystem, "Uses", "HTTPS")
-Rel(admin, coreSystem, "Administers", "HTTPS")
-Rel(coreSystem, paymentGateway, "Processes transactions", "REST API")
-Rel(client, identityProvider, "Authenticates", "OAuth 2.0 / OpenID Connect")
-Rel(coreSystem, identityProvider, "Validates identities", "OAuth 2.0 / OpenID Connect")
-Rel(coreSystem, observabilityPlatform, "Emits metrics, logs and traces", "OTLP")
-Rel(admin, observabilityPlatform, "Monitors the platform", "HTTPS")
+Rel(customer, ecommercePlatform, "Browses products and manages purchases", "HTTPS")
+Rel(customer, identityProvider, "Authenticates", "OAuth 2.0 / OpenID Connect")
+Rel(platformOperator, ecommercePlatform, "Operates and supports")
+Rel(platformOperator, observabilityPlatform, "Monitors health and investigates incidents", "HTTPS")
+
+Rel(ecommercePlatform, identityProvider, "Validates access tokens", "OIDC / JWKS")
+Rel(ecommercePlatform, paymentProvider, "Authorizes, captures and refunds payments", "HTTPS / REST")
+Rel(ecommercePlatform, notificationProvider, "Sends transactional notifications", "HTTPS / provider APIs")
+Rel(ecommercePlatform, observabilityPlatform, "Emits metrics, logs and traces", "OTLP / Prometheus")
+
+Lay_R(customer, platformOperator)
+Lay_D(customer, ecommercePlatform)
+Lay_D(ecommercePlatform, identityProvider)
+Lay_R(identityProvider, paymentProvider)
+Lay_R(paymentProvider, notificationProvider)
+Lay_R(notificationProvider, observabilityPlatform)
+
+SHOW_LEGEND()
 @enduml
