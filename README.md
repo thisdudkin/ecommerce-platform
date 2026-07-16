@@ -10,11 +10,11 @@ external Identity Provider based on the OAuth 2.0 and OpenID Connect protocols.
 
 ## Project Architecture
 
-Certain modules are intentionally omitted from the diagram—for example, observability components or databases on the
-container diagram. This was done deliberately to avoid cluttering the diagram with an excessive number of containers.
+The diagrams describe the target architecture. Repetitive relationships, such as identical database and telemetry
+connections from every service, are summarized where necessary to keep the diagrams readable.
 
 ### Context Diagram
 
 ![Context Diagram](docs/images/context.png)
 
-You can find the rest of the documentation [here](https://github.com/thisdudkin/ecommerce-platform/tree/main/docs).
+> You can find the rest of the documentation [here](https://github.com/thisdudkin/ecommerce-platform/tree/main/docs).
