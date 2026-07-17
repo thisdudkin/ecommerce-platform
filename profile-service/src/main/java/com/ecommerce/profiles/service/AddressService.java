@@ -3,6 +3,7 @@ package com.ecommerce.profiles.service;
 import com.ecommerce.profiles.rest.dto.AddressListResponse;
 import com.ecommerce.profiles.rest.dto.AddressResponse;
 import com.ecommerce.profiles.rest.dto.CreateAddressRequest;
+import com.ecommerce.profiles.rest.dto.UpdateAddressRequest;
 import com.ecommerce.profiles.rest.dto.UpdateProfileRequest;
 
 import java.util.UUID;
@@ -15,7 +16,7 @@ public interface AddressService {
 
     AddressListResponse listProfileAddresses(UUID profileId);
 
-    AddressResponse updateProfileAddress(UUID profileId, UUID addressId, UpdateProfileRequest request);
+    AddressResponse updateProfileAddress(UUID profileId, UUID addressId, UpdateAddressRequest request);
 
     void deleteProfileAddress(UUID profileId, UUID addressId);
 
