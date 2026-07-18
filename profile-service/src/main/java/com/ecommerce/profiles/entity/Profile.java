@@ -17,6 +17,7 @@ import org.hibernate.proxy.HibernateProxy;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -50,7 +51,7 @@ public class Profile extends AuditEntity {
     private String phone;
 
     @JoinColumn(name = "country_id")
-    @ManyToOne(fetch = LAZY, optional = false)
+    @ManyToOne(fetch = LAZY)
     private Country country;
 
     @Version
@@ -74,6 +75,10 @@ public class Profile extends AuditEntity {
 
     protected void setVersion(Long version) {
         this.version = version;
+    }
+
+    public List<Address> getAddresses() {
+        return Collections.unmodifiableList(addresses);
     }
 
     @Override

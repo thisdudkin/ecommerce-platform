@@ -11,6 +11,6 @@ import static org.mapstruct.MappingConstants.ComponentModel.SPRING;
 @Mapper(componentModel = SPRING)
 public interface CountryMapper {
 
-    List<CountryResponse> toListResponse(List<Country> countries);
+    List<CountryResponse> toResponseList(List<Country> countries);
 
 }
