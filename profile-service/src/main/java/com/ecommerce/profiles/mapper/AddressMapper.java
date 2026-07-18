@@ -28,11 +28,13 @@ public interface AddressMapper {
     @Mapping(target = "profile", ignore = true)
     @Mapping(target = "country", ignore = true)
     @Mapping(target = "version", ignore = true)
+    @Mapping(target = "preferred", ignore = true)
     Address toEntity(CreateAddressRequest request);
 
     @Mapping(target = "profile", ignore = true)
     @Mapping(target = "country", ignore = true)
     @Mapping(target = "version", ignore = true)
+    @Mapping(target = "preferred", ignore = true)
     void update(@MappingTarget Address address, UpdateAddressRequest request);
 
     default OffsetDateTime toOffsetDateTime(Instant timestamp) {

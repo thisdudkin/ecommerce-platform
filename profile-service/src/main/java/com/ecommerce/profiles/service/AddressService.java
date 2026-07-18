@@ -4,7 +4,6 @@ import com.ecommerce.profiles.rest.dto.AddressListResponse;
 import com.ecommerce.profiles.rest.dto.AddressResponse;
 import com.ecommerce.profiles.rest.dto.CreateAddressRequest;
 import com.ecommerce.profiles.rest.dto.UpdateAddressRequest;
-import com.ecommerce.profiles.rest.dto.UpdateProfileRequest;
 
 import java.util.UUID;
 
