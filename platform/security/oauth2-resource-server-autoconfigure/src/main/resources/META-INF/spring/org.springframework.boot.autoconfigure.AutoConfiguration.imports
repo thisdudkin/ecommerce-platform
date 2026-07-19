@@ -1,0 +1,2 @@
+com.ecommerce.platform.security.oauth2.resourceserver.ResourceServerAutoConfiguration
+com.ecommerce.platform.security.oauth2.resourceserver.ResourceServerWebAutoConfiguration
