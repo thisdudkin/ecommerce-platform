@@ -1,0 +1,21 @@
+name: Integrate merged pull requests
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  integrate:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Replace labels
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: gh api --method PUT "repos/$GH_REPO/issues/$PR_NUMBER/labels" --field "labels[]=integrated"
