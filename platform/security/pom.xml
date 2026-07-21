@@ -33,7 +33,23 @@
 
         <!-- Quality Gates -->
         <jacoco.minimum.branch.coverage>0.70</jacoco.minimum.branch.coverage>
+
+        <!-- Artifact Repository -->
+        <nexus.url>http://localhost:8081</nexus.url>
     </properties>
+
+    <distributionManagement>
+        <repository>
+            <id>nexus</id>
+            <name>Nexus Releases</name>
+            <url>${nexus.url}/repository/maven-releases/</url>
+        </repository>
+        <snapshotRepository>
+            <id>nexus</id>
+            <name>Nexus Snapshots</name>
+            <url>${nexus.url}/repository/maven-snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
 
     <build>
         <pluginManagement>
