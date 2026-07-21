@@ -38,6 +38,7 @@
 
         <!-- Other Settings -->
         <mapstruct.version>1.6.3</mapstruct.version>
+        <platform.oauth2.starter.version>1.0.0</platform.oauth2.starter.version>
         <lombok.mapstruct.binding.version>0.2.0</lombok.mapstruct.binding.version>
         <flyway.database.postgresql.version>12.10.0</flyway.database.postgresql.version>
     </properties>
@@ -58,8 +59,9 @@
 
         <!-- Security -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security-oauth2-resource-server</artifactId>
+            <groupId>com.ecommerce.platform</groupId>
+            <artifactId>oauth2-resource-server-starter</artifactId>
+            <version>${platform.oauth2.starter.version}</version>
         </dependency>
 
         <!-- SQL -->
