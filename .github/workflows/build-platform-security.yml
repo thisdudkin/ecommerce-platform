@@ -1,0 +1,42 @@
+name: Build platform security
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/build-platform-security.yml"
+      - "platform/security/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/build-platform-security.yml"
+      - "platform/security/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+          cache: maven
+          cache-dependency-path: |
+            platform/security/pom.xml
+            platform/security/**/pom.xml
+
+      - name: Verify platform security
+        run: mvn --batch-mode --no-transfer-progress --file platform/security/pom.xml clean verify
