@@ -1,0 +1,50 @@
+name: Build profile service
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/build-profile-service.yml"
+      - "api/profile-api.yml"
+      - "platform/security/**"
+      - "profile-service/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/build-profile-service.yml"
+      - "api/profile-api.yml"
+      - "platform/security/**"
+      - "profile-service/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+          cache: maven
+          cache-dependency-path: |
+            platform/security/pom.xml
+            platform/security/**/pom.xml
+            profile-service/pom.xml
+
+      - name: Install platform dependencies
+        run: mvn --batch-mode --no-transfer-progress --file platform/security/pom.xml -DskipTests -Djacoco.skip=true install
+
+      - name: Verify profile service
+        run: mvn --batch-mode --no-transfer-progress --file profile-service/pom.xml clean verify
